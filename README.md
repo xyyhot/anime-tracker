@@ -49,12 +49,14 @@ anime> quit
 **环境要求**：Windows + MinGW-w64（g++ 支持 C++17），或 Visual Studio。推荐用 **Windows Terminal** 运行，中文显示效果最好。
 
 ```bat
+第一步：
 :: 方法一：双击 build.bat（一键编译）
 build.bat
 
 :: 方法二：手动编译
 g++ -std=c++17 -Wall -O2 src\main.cpp src\storage.cpp src\http.cpp src\anilist.cpp -Iinclude -o build\anime_tracker.exe -lwininet
 
+第二步：
 :: 运行
 build\anime_tracker.exe
 ```
