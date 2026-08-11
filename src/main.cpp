@@ -1,6 +1,7 @@
 // main.cpp — 程序入口：命令行交互循环（REPL）
 // 用法：输入 help 查看所有命令
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <iostream>
 #include <sstream>
@@ -11,6 +12,7 @@
 #include <windows.h>   // SetConsoleOutputCP / SetConsoleCP
 #endif
 
+#include "anilist.hpp"
 #include "catalog.hpp"
 #include "models.hpp"
 #include "storage.hpp"
@@ -81,9 +83,23 @@ void printHelp() {
 
 void cmdSearch(const std::string& kw) {
     if (kw.empty()) {
-        std::cout << "请输入关键词，例如: search 奇幻\n";
+        std::cout << "请输入关键词，例如: search frieren（在线）/ search 奇幻（内置番库）\n";
         return;
     }
+    // 在线模式：调用 AniList API 搜索全网番剧
+    try {
+        auto results = searchAnime(kw);
+        if (!results.empty()) {
+            std::cout << "在线搜索到 " << results.size() << " 部（AniList）：\n";
+            for (const auto& a : results) printFullInfo(a);
+            std::cout << "提示：输入 add <数字id> 加入列表，如 add " << results.front().id << "\n";
+            return;
+        }
+        std::cout << "API 无结果（在线搜索推荐用英文/罗马音关键词），改用内置番库：\n";
+    } catch (const std::exception& e) {
+        std::cout << "在线搜索失败（" << e.what() << "），改用内置番库（离线模式）：\n";
+    }
+    // 离线回退：内置番库
     int n = 0;
     for (const auto& a : catalog()) {
         if (a.matches(kw)) {
@@ -124,19 +140,41 @@ void cmdList(const MyList& list) {
 void cmdAdd(MyList& list, const std::string& id) {
     if (id.empty()) { std::cout << "用法: add <id>\n"; return; }
     if (list.count(id)) { std::cout << id << " 已经在你的列表里了。\n"; return; }
-    const Anime* found = findInCatalog(id);
-    if (!found) {
-        std::cout << "番库中没有 id 为 " << id << " 的条目。相近结果：\n";
-        int shown = 0;
-        for (const auto& a : catalog())
-            if (a.matches(id) && shown < 5) { printFullInfo(a); ++shown; }
-        if (!shown) std::cout << "（无相近结果，试试 search 找找）\n";
+
+    // 1) 内置番库精确匹配（离线也能用）
+    if (const Anime* found = findInCatalog(id)) {
+        list[id] = *found;                       // 从番库复制一份到我的列表
+        list[id].status = Status::Watching;      // 加入即"在看"
+        saveMyList(list);
+        std::cout << "已加入追番: " << found->titleZh << "（内置番库）\n";
         return;
     }
-    list[id] = *found;                       // 从番库复制一份到我的列表
-    list[id].status = Status::Watching;      // 加入即"在看"
-    saveMyList(list);
-    std::cout << "已加入追番: " << found->titleZh << "（" << found->season << "）\n";
+
+    // 2) 数字 id → 尝试从 AniList 在线拉取
+    if (std::all_of(id.begin(), id.end(), [](unsigned char c) { return std::isdigit(c); })) {
+        try {
+            Anime fromApi;
+            if (fetchAnimeById(id, fromApi)) {
+                list[id] = fromApi;
+                list[id].status = Status::Watching;
+                saveMyList(list);
+                std::cout << "已加入追番: " << fromApi.titleZh << "（AniList 在线）\n";
+                return;
+            }
+        } catch (const std::exception& e) {
+            std::cout << "在线获取失败（" << e.what() << "）\n";
+        }
+        std::cout << "AniList 上找不到 id 为 " << id << " 的番剧。\n";
+        return;
+    }
+
+    // 3) 都不是 → 给出建议
+    std::cout << "番库中没有 id 为 " << id << " 的条目。相近结果：\n";
+    int shown = 0;
+    for (const auto& a : catalog())
+        if (a.matches(id) && shown < 5) { printFullInfo(a); ++shown; }
+    if (!shown)
+        std::cout << "（无相近结果。提示：先 search 关键词在线搜索，再用返回的数字 id 执行 add）\n";
 }
 
 void cmdWatch(MyList& list, const std::string& id, int ep) {
@@ -226,7 +264,7 @@ int main() {
     loadMyList(myList);
 
     std::cout << "====================================\n"
-              << "   anime-tracker 追番进度表 v1.0\n"
+              << "   anime-tracker 追番进度表 v1.1\n"
               << "   数据保存: " << kDataFile << "\n"
               << "====================================\n";
     printHelp();

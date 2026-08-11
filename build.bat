@@ -9,7 +9,7 @@ if errorlevel 1 (
     exit /b 1
 )
 if not exist build mkdir build
-g++ -std=c++17 -Wall -O2 src\main.cpp src\storage.cpp -Iinclude -o build\anime_tracker.exe
+g++ -std=c++17 -Wall -O2 src\main.cpp src\storage.cpp src\http.cpp src\anilist.cpp -Iinclude -o build\anime_tracker.exe -lwininet
 if errorlevel 1 (
     echo [ERROR] Build failed. Check the messages above.
     pause

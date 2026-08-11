@@ -1,6 +1,6 @@
 # 🎬 anime-tracker 追番进度表
 
-> 一个用 **C++17** 写的命令行追番管理工具：搜索番剧、记录进度、打分、管理状态。
+> 一个用 **C++17** 写的命令行追番管理工具：**在线搜索番剧**、记录进度、打分、管理状态。
 > 数据实时保存为 JSON 文件，重启不丢。从自己的追番习惯出发做的练手项目。
 
 ![C++](https://img.shields.io/badge/C%2B%2B-17-blue)
@@ -9,7 +9,7 @@
 
 ## ✨ 功能特性
 
-- 🔍 **搜索**：内置 26 部热门番剧，支持中文名 / 英文名 / 类型模糊匹配（如 `search 奇幻`）
+- 🔍 **在线搜索**：调用 AniList API 实时搜索全网番剧（推荐英文/罗马音关键词）；断网时自动回退内置 26 部番库（支持中文/类型）
 - 📝 **进度管理**：记录看到第几集、打分（0~10）、切换状态（在看 / 看过 / 弃番）
 - 💾 **自动保存**：所有修改实时写入 `data/mylist.json`，人类可读、可手动编辑
 - 📊 **统计**：查看各部数量、平均评分
@@ -18,24 +18,26 @@
 
 ```
 ====================================
-   anime-tracker 追番进度表 v1.0
+   anime-tracker 追番进度表 v1.1
    数据保存: data/mylist.json
 ====================================
 
 anime> search frieren
-  frieren | 葬送的芙莉莲 (Frieren: Beyond Journey's End) | 2023秋 | 28集 | 奇幻/冒险/治愈
-共找到 1 部。
+在线搜索到 5 部（AniList）：
+  154587 | Frieren: Beyond Journey's End (Sousou no Frieren) | 2023 FALL | 28集 | Adventure/Drama/Fantasy
+  ...
+提示：输入 add <数字id> 加入列表，如 add 154587
 
-anime> add frieren
-已加入追番: 葬送的芙莉莲（2023秋）
+anime> add 154587
+已加入追番: Frieren: Beyond Journey's End（AniList 在线）
 
-anime> watch frieren 10
-葬送的芙莉莲 → 看到 10/28 集
+anime> watch 154587 10
+Frieren: Beyond Journey's End → 看到 10/28 集
 
 anime> list
 我的追番列表（共 1 部）
 [在看] 1 部：
-  frieren | 葬送的芙莉莲 | 10/28 | 评分 9
+  154587 | Frieren: Beyond Journey's End | 10/28 | 评分 9
 
 anime> quit
 再见，下次再追番！
@@ -50,7 +52,7 @@ anime> quit
 build.bat
 
 :: 方法二：手动编译
-g++ -std=c++17 -Wall -O2 src\main.cpp src\storage.cpp -Iinclude -o build\anime_tracker.exe
+g++ -std=c++17 -Wall -O2 src\main.cpp src\storage.cpp src\http.cpp src\anilist.cpp -Iinclude -o build\anime_tracker.exe -lwininet
 
 :: 运行
 build\anime_tracker.exe
@@ -60,8 +62,9 @@ build\anime_tracker.exe
 
 | 命令 | 说明 |
 |---|---|
-| `search 芙莉莲` / `search frieren` | 在番库中搜索（支持中文/英文/类型） |
-| `add frieren` | 加入追番列表（状态:在看） |
+| `search frieren` | 在线搜索番剧（英文/罗马音关键词） |
+| `search 奇幻` | 中文/类型关键词走内置番库（离线可用） |
+| `add 154587` | 按 AniList 数字 id 加入列表（也可用内置番库 id） |
 | `list` | 显示我的追番列表（按状态分组） |
 | `watch frieren` | 进度 +1 |
 | `watch frieren 10` | 进度设为第 10 集 |
@@ -77,7 +80,9 @@ build\anime_tracker.exe
 | 技术 | 用途 |
 |---|---|
 | C++17 | 核心语言：类、STL、枚举、结构化绑定 |
-| nlohmann/json | 数据序列化（单头文件，零依赖） |
+| nlohmann/json | 数据序列化 + API 响应解析（单头文件，零依赖） |
+| WinINET | Windows 自带的 HTTPS 网络库（无需安装任何依赖） |
+| AniList API | 在线搜索数据源（GraphQL） |
 | std::filesystem | 数据目录管理 |
 | MinGW g++ | 编译构建（`build.bat` 一键脚本） |
 
@@ -90,7 +95,9 @@ anime-tracker/
 ├── src/
 │   ├── main.cpp             入口 + 命令行交互循环
 │   ├── models.hpp           Anime 结构体、状态枚举、JSON 序列化
-│   ├── catalog.hpp          内置番库种子数据（26 部）
+│   ├── catalog.hpp          内置番库种子数据（26 部，离线回退用）
+│   ├── anilist.hpp/.cpp     AniList API 客户端（在线搜索）
+│   ├── http.hpp/.cpp        WinINET 网络请求封装（零依赖）
 │   └── storage.hpp/.cpp     列表的保存与读取
 └── data/mylist.json         你的数据（自动生成，可手动编辑）
 ```
