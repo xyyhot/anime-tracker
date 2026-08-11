@@ -6,6 +6,7 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-17-blue)
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-0078d6)
 ![JSON](https://img.shields.io/badge/storage-JSON-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ## ✨ 功能特性
 
@@ -116,3 +117,7 @@ anime-tracker/
 - 源码为 UTF-8 编码，在 VS Code 中打开如遇乱码请切换编码
 - 想手动改数据？直接编辑 `data/mylist.json` 再启动即可
 - 构建产物（`build/`）和个人数据（`data/`）已被 `.gitignore` 排除，不会上传
+
+## 📄 许可
+
+[MIT License](LICENSE) © 2026 xyyhot
