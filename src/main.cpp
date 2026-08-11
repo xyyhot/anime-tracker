@@ -91,7 +91,12 @@ void cmdSearch(const std::string& kw) {
         auto results = searchAnime(kw);
         if (!results.empty()) {
             std::cout << "在线搜索到 " << results.size() << " 部（AniList）：\n";
-            for (const auto& a : results) printFullInfo(a);
+            for (auto& a : results) {
+                // 本地番库已知的番剧，用中文名显示（AniList 没有中文标题）
+                if (const Anime* c = findInCatalog(a.id))
+                    a.titleZh = c->titleZh;
+                printFullInfo(a);
+            }
             std::cout << "提示：输入 add <数字id> 加入列表，如 add " << results.front().id << "\n";
             return;
         }
