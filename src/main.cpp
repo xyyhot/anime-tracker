@@ -138,7 +138,7 @@ void cmdList(const MyList& list) {
                       << progressText(*a) << " | " << ratingText(*a) << "\n";
     };
     dump("在看", watching);
-    dump("看过", completed);
+    dump("看完", completed);
     dump("弃番", dropped);
 }
 
@@ -204,7 +204,7 @@ void cmdFinish(MyList& list, const std::string& id) {
     a.status = Status::Completed;
     if (a.totalEpisodes > 0) a.progress = a.totalEpisodes;
     saveMyList(list);
-    std::cout << "恭喜看完: " << a.titleZh << " 🎉\n";
+    std::cout << "恭喜看完: " << a.titleZh << " 喵\n";
 }
 
 void cmdDrop(MyList& list, const std::string& id) {
@@ -212,7 +212,7 @@ void cmdDrop(MyList& list, const std::string& id) {
     if (it == list.end()) { std::cout << id << " 不在你的列表中，先 add " << id << "\n"; return; }
     it->second.status = Status::Dropped;
     saveMyList(list);
-    std::cout << "已弃番: " << it->second.titleZh << "\n";
+    std::cout << "已弃番: " << it->second.titleZh << "怎么弃番了喵？是不好看吗\n";
 }
 
 void cmdResume(MyList& list, const std::string& id) {
@@ -252,8 +252,37 @@ void cmdStats(const MyList& list) {
         }
         if (a.rating > 0) { ratedSum += a.rating; ++ratedCnt; }
     }
-    std::cout << "统计: 在看 " << nWatch << " 部 / 看过 " << nDone << " 部 / 弃番 "
-              << nDrop << " 部";
+    std::cout << "统计: 在看 " << nWatch << " 部 / 完 " << nDone << " 部 / 弃番 "
+              << nDrop << " 部\n";
+    // 新增：列出我在看的番剧
+    if (nWatch > 0) {
+        std::cout << "在看的番剧：\n";
+        for (const auto& [id, a] : list) {
+            if (a.status == Status::Watching) {
+                std::cout << "  " << a.titleZh << " | " << progressText(a) << " | " 
+                << ratingText(a) << "\n";
+            }
+        }
+    }
+    // 新增：列出我看完的番剧
+    if (nDone > 0) {
+        std::cout << "看完的番剧：\n";
+        for (const auto& [id, a] : list) {
+            if (a.status == Status::Completed) {
+                std::cout << "  " << a.titleZh << " | " << ratingText(a) << "\n";
+            }
+        }
+    }
+    // 新增：列出我弃番的番剧
+    if (nDrop > 0) {
+        std::cout << "弃番的番剧：\n";
+        for (const auto& [id, a] : list) {
+            if (a.status == Status::Dropped) {
+                std::cout << "  " << a.titleZh << " | " << progressText(a) << " | " 
+                << ratingText(a) << "\n";
+            }
+        }
+    }
     if (ratedCnt)
         std::cout << " | 平均评分 " << (static_cast<double>(ratedSum) / ratedCnt);
     std::cout << "\n";
